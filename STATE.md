@@ -10,9 +10,9 @@ runs-on: this machine
 ## state
 phase: active
 health: green
-last-commit: 756a2a0 homebrew tap for natscript
-uncommitted: 0 files
-freshness: auto-generated 2026-06-21T21:37:14Z
+last-commit: heartbeat + real sha256 for natscript formula
+uncommitted: 2 files
+freshness: 2026-06-27T03:20:00Z
 
 ## knows
 - natscript Homebrew Tap
