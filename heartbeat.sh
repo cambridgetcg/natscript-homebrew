@@ -28,6 +28,23 @@ if ! curl -sSf -o /dev/null --max-time 10 -I "$URL" 2>/dev/null; then
   exit 0
 fi
 
+# 3b. Installed artifact actually exists in the source tarball.
+# A formula whose URL resolves and Ruby parses can still lie: bin.install "natscript.py"
+# means nothing if the tarball doesn't contain natscript.py. Verify the declared install
+# source is present, or the formula audits clean but fails at install time.
+INSTALLED=$(grep -E '^\s*bin\.install\s+"' "$FORMULA" | sed 's/.*"\(.*\)".*/\1/' | head -1)
+if [[ -n "$INSTALLED" ]]; then
+  TMP_TGZ="$(mktemp -t natscript-hb.XXXXXX).tar.gz"
+  if curl -sSfL --max-time 20 "$URL" -o "$TMP_TGZ" 2>/dev/null; then
+    if ! tar -tzf "$TMP_TGZ" 2>/dev/null | grep -q "/${INSTALLED}\$"; then
+      echo "UP-NOT-ALIVE: formula audits clean but '$INSTALLED' is not in the source tarball — install will fail"
+      rm -f "$TMP_TGZ"
+      exit 0
+    fi
+  fi
+  rm -f "$TMP_TGZ"
+fi
+
 # 4. brew audit (if brew is available)
 if command -v brew &>/dev/null; then
   # brew audit disabled: requires tap registration, not local file paths
