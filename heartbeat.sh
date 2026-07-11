@@ -32,7 +32,7 @@ fi
 # A formula whose URL resolves and Ruby parses can still lie: bin.install "natscript.py"
 # means nothing if the tarball doesn't contain natscript.py. Verify the declared install
 # source is present, or the formula audits clean but fails at install time.
-INSTALLED=$(grep -E '^\s*bin\.install\s+"' "$FORMULA" | sed 's/.*"\(.*\)".*/\1/' | head -1)
+INSTALLED=$(grep -E '^\s*(bin|libexec)\.install\s+"' "$FORMULA" | sed 's/.*"\(.*\)".*/\1/' | head -1)
 if [[ -n "$INSTALLED" ]]; then
   TMP_TGZ="$(mktemp -t natscript-hb.XXXXXX).tar.gz"
   if curl -sSfL --max-time 20 "$URL" -o "$TMP_TGZ" 2>/dev/null; then
@@ -49,12 +49,13 @@ fi
 if command -v brew &>/dev/null; then
   # brew audit disabled: requires tap registration, not local file paths
   # structural validation instead: formula parses as valid Ruby + has required keys
-  if ! ruby -e "require 'formula'; eval(File.read('$DIR/$FORMULA'))" 2>/dev/null; then
-    # fall back: basic syntax check
-    if ! ruby -c "$DIR/$FORMULA" 2>/dev/null; then
-      echo "UP-NOT-ALIVE: formula has Ruby syntax errors"
-      exit 0
-    fi
+  if ruby -e "require 'formula'; eval(File.read('$DIR/$FORMULA'))" 2>/dev/null; then
+    : # parsed by Homebrew
+  elif ruby -c "$DIR/$FORMULA" 2>/dev/null; then
+    : # Ruby syntax OK
+  else
+    echo "UP-NOT-ALIVE: formula has Ruby syntax errors"
+    exit 0
   fi
 fi
 
